@@ -57,6 +57,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $this->config['order_status_customer'] = isset($this->settings['order_status_customer']) ? $this->settings['order_status_customer'] : null;
                     $this->config['total'] = isset($this->settings['total']) ? $this->settings['total'] : null;
                     $this->config['tax'] = isset($this->settings['tax']) ? $this->settings['tax'] : null;
+                    $this->config['text_to_customer'] = __('Seu código de rastreio Balcão Balcão é %s, você pode acompanhar este pedido pelo nosso aplicativo Android ou iOS.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
+                    $this->config['text_to_store'] = __('O código de rastreio Balcão Balcão para este pedido é %s. Entretanto não foi possível gerar o pedido automaticamente, efetue o pagamento da sua etiqueta em nosso dashboard <a href=\'https://dashboard.balcaobalcao.com.br/etiquetas/%s\' target=\'_blank\'>dashboard.balcaobalcao.com.br</a>. Você pode cadastrar seu cartão de crédito para automatizar este processo ou se você ainda não é correntista BB entre em contato conosco e solicite maiores informações.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
 
                     require_once('includes/balcaobalcao.php');
                     $this->balcaobalcao = new BalcaoBalcao($this->config);
@@ -235,6 +237,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                  */
                 public function calculate_shipping($package = array())
                 {
+
                     // Check the minimum value
                     if( ($package['contents_cost'] < $this->config['total']) || $this->config['is_enabled'] == 'no') {
                         return false;
@@ -256,8 +259,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                         // Converte para metros, medidas são unitárias
                         $product['width']  = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_width());
-                        // $product['height'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_height());
-                        $product['height'] = 1;
+                        $product['height'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_height());
                         $product['length'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_length());
 
                         // O peso do produto não é unitário como a dimensão, é multiplicado pela quantidade.
@@ -284,24 +286,24 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                     $json = $this->balcaobalcao->getData('shipping/find', $api_data);
 
-                    echo '<pre>';die(var_dump($json));
+                    // Valida se retornou alguma cotação da API
+                    if($json->status_code == 422) {
+                        return false;
+                    }
 
-                    $rate = array(
-                        array(
-                            'id' => 123,
-                            'label' => 'primeiro',
-                            'cost' => '10.98',
+                    $rate = array();
+                    foreach ($json->data as $key => $quote) {
+                        $rate[] = array(
+                            'id' => $key+1,
+                            'label' => $this->config['title'].': '.$quote->name . ' - ('. $quote->deadline . ') <br/>' . $quote->address,
+                            'cost' => $quote->price,
+                            'meta_data' => array(
+                                __('Prazo de Entrega') => $quote->deadline,
+                                'Token' => $quote->token
+                            ),
                             'calc_tax' => 'per_order',
-
-                        ),
-                        array(
-                            'id' => 456,
-                            'label' => 'segundo',
-                            'cost' => '10.99',
-                            'calc_tax' => 'per_order',
-                        ),
-                    );
-
+                        );
+                    }
 
                     // Register the rate
                     foreach ($rate as $key => $value) {
@@ -328,5 +330,24 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     {
         $methods['balcaobalcao_shipping'] = 'WC_Balcaobalcao_Shipping_Method';
         return $methods;
+    }
+
+    add_action('woocommerce_thankyou', 'send_balcaobalcao_quote');
+    function send_balcaobalcao_quote($order_id)
+    {
+        if (!$order_id) {
+            return;
+        }
+
+        $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+        $order_status_send = end($balcaobalcao_shipping->config['order_status_send']);
+
+        $order = wc_get_order($order_id);
+        $current_order_status = 'wc-'.$order->get_status();
+
+        // Se o status atual do pedido for igual ao status configurado em "Status Envio"
+        if($order_status_send == $current_order_status) {
+            $balcaobalcao_shipping->balcaobalcao->sendOrder($balcaobalcao_shipping->config, $order, $order_status_send);
+        }
     }
 }

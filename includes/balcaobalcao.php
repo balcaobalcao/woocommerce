@@ -33,6 +33,9 @@ class BalcaoBalcao
     {
         $query = http_build_query($data);
         $url = $this->api_endpoint . $uri;
+
+        $this->write_log('Post data: ' . $url . '?' . $query);
+
         $api_data = $this->postAPIData($url, $query, $method);
         $json = json_decode($api_data);
 
@@ -204,92 +207,86 @@ class BalcaoBalcao
     /**
      * Envia um pedido pro Balcão Balcão.
      *
+     * @param array $config
      * @param array $order_info
      * @param int $order_status_id
      * @return object
      */
-    public function sendOrder($order_info, $order_status_id)
+    public function sendOrder($config, WC_Order $order, $order_new_status)
     {
-        $bb_order = $this->model_shipping_balcaobalcao->getBBOrder($order_info['order_id']);
+        $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+
+        // Busca os dados do pedido
+        $order_info['order_id'] = $order->get_id();
+        $order_info['shipping_firstname'] = $order->get_shipping_first_name();
+        $order_info['shipping_lastname'] = $order->get_shipping_last_name();
+        $order_info['firstname'] = $order->get_billing_first_name();
+        $order_info['lastname'] = $order->get_billing_last_name();
+        $order_info['shipping_address_1'] = $order->get_shipping_address_1();
+        $order_info['shipping_address_2'] = $order->get_shipping_address_2();
+        $order_info['customer_id'] = $order->get_customer_id();
+
+        $products = $order->get_items('line_item');
+        $products_data = array();
+        foreach ($products as $key => $product) {
+
+            $product_detail = $product->get_product();
+
+            // Get store weight unit
+            $woocommerce_weight_unit = get_option('woocommerce_weight_unit');
+
+            // Get store dimension unit
+            $woocommerce_dimension_unit = get_option('woocommerce_dimension_unit');
+
+            // Converte para metros, medidas são unitárias
+            $product_info['width']  = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_width());
+            $product_info['height'] = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_height());
+            $product_info['length'] = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_length());
+
+            // O peso do produto não é unitário como a dimensão, é multiplicado pela quantidade.
+            $product_info['weight'] = $balcaobalcao_shipping->helpers->getWeightInKg($woocommerce_weight_unit, $product_detail->get_weight()) / $product->get_quantity();
+
+            $products_data[$key] = [
+                'name' => $product->get_name(),
+                'quantity' => $product->get_quantity(),
+                'price' => (float) $product->get_total(),
+                'weight' => $product_info['weight'],
+                'length' => $product_info['length'],
+                'width' => $product_info['width'],
+                'height' => $product_info['height'],
+            ];
+        }
+
+        $order_info['products'] = $products_data;
+        $order_info['email'] = $order->get_billing_email();
+        $order_info['telephone'] = $order->get_billing_phone();
+        $order_info['total'] = $order->get_total();
+        $order_info['date_added'] = $order->order_date;
+
+        $shipping_info = $order->get_items('shipping');
+        foreach ($shipping_info as $key => $shipping) {
+            $shipping_token = $shipping->get_meta('Token');
+        }
+
+        $order_info['shipping_token'] = $shipping_token;
 
         // Prepara o nome do usuário
-        if (trim($order_info['shipping_firstname']))
+        if (trim($order_info['shipping_firstname'])) {
             $customer_name = $order_info['shipping_firstname'] . ' ' . $order_info['shipping_lastname'];
-        else
+        } else {
             $customer_name = $order_info['firstname'] . ' ' . $order_info['lastname'];
+        }
 
         // Define o endereço
         $address = trim($order_info['shipping_address_1'] . ' ' . $order_info['shipping_address_2']);
-
-        // Pega informações do custom_field
-        $this->load->model('account/custom_field');
-        $customer_info = $this->model_account_customer->getCustomer($order_info['customer_id']);
-        $data['custom_fields'] = $this->model_account_custom_field->getCustomFields($customer_info['customer_group_id']);
-
-        $document = null;
-        $address_number = null;
-        $address_complement = null;
-        if ($order_info['custom_field']) {
-            foreach ($data['custom_fields'] as $custom_fields) {
-                if (preg_match("/(cpf|cnpj)/i", $custom_fields['name'])) {
-                    $document = $order_info['custom_field'][$custom_fields['custom_field_id']];
-                } else if (preg_match("/(numero|número)/i", $custom_fields['name'])) {
-                    $address_number = $order_info['custom_field'][$custom_fields['custom_field_id']];
-                } else if (preg_match("/complemento/i", $custom_fields['name'])) {
-                    $address_complement = $order_info['custom_field'][$custom_fields['custom_field_id']];
-                }
-            }
-        }
-
-        //Se o número do endereço ainda assim for nulo tentamos pela última vez no pedido
-        if (empty($address_number))
-            $address_number = preg_replace('/[\s]{2,}/', ' ', trim(preg_replace('/\D/', ' ', $order_info['shipping_address_1'])));
-
-        //Se não encontrar o complemento, pegamos o valor do campo padrão do opencart
-        if (empty($address_complement))
-            $address_complement = trim($order_info['shipping_company']);
-
-        //Se ainda for nulo, tentamos mais uma vez, mas agora buscando pelo custom_field do cliente
-        //Caso tenham atualizado o cadastro do cliente depois do pedido efetuado
-        if (empty($document) || empty($address_number)) {
-            $customer_info['custom_field'] = json_decode($customer_info['custom_field'], true);
-            foreach ($data['custom_fields'] as $custom_fields) {
-                if (empty($document) && preg_match("/(cpf|cnpj)/i", $custom_fields['name'])) {
-                    $document = $customer_info['custom_field'][$custom_fields['custom_field_id']];
-                } else if (empty($address_number) && preg_match("/(numero|número)/i", $custom_fields['name'])) {
-                    $address_number = $customer_info['custom_field'][$custom_fields['custom_field_id']];
-                } else if (empty($address_complement) && preg_match("/complemento/i", $custom_fields['name'])) {
-                    $address_complement = $customer_info['custom_field'][$custom_fields['custom_field_id']];
-                }
-            }
-        }
-
-        // Get Products
-        $products = $this->model_shipping_balcaobalcao->getOrderProducts($order_info['order_id']);
-
-        // Prepare Product Data
-        $products_data = array();
-        foreach ($products as $product) {
-            $product['width']  = $this->model_shipping_balcaobalcao->getSizeInMeters($product['length_class_id'], $product['width']);
-            $product['height'] = $this->model_shipping_balcaobalcao->getSizeInMeters($product['length_class_id'], $product['height']);
-            $product['length'] = $this->model_shipping_balcaobalcao->getSizeInMeters($product['length_class_id'], $product['length']);
-            $product['weight'] = $this->model_shipping_balcaobalcao->getWeightInKg($product['weight_class_id'], $product['weight']);
-
-            $products_data[] = array(
-                'name'     => $product['name'],
-                'quantity' => $product['quantity'],
-                'price'    => $product['price'],
-                'width'    => $product['width'],
-                'height'   => $product['height'],
-                'length'   => $product['length'],
-                'weight'   => $product['weight'],
-            );
-        }
+        $address_number = $order->get_meta('_billing_number');
+        $address_complement = trim($order_info['shipping_address_2']);
+        $document = $order->get_meta('_billing_cpf');
 
         // Prepare Post Data
         $data = array(
-            'token'      => $this->config->get('balcaobalcao_token'),
-            'return_url' => $this->config->get('balcaobalcao_return_url'),
+            'token'      => $config['token'],
+            'return_url' => $config['return_url'],
             'customer'   => array(
                 'name'               => $customer_name,
                 'document'           => $document,
@@ -303,8 +300,8 @@ class BalcaoBalcao
                 'id'       => $order_info['order_id'],
                 'value'    => $order_info['total'],
                 'date'     => $order_info['date_added'],
-                'token'    => $bb_order['token'],
-                'products' => $products_data,
+                'token'    => $order_info['shipping_token'],
+                'products' => $order_info['products'],
             ),
         );
 
@@ -313,24 +310,26 @@ class BalcaoBalcao
 
         // If success
         if ($post_data && isset($post_data->tracking_code)) {
+
             // Update tracking code with the returned code
-            $this->model_shipping_balcaobalcao->updateTrackingCodeOrder($post_data->tracking_code, $order_info['order_id']);
+            end($shipping_info)->update_meta_data(__('Código de Rastreio'), $post_data->tracking_code);
 
             // if tag is "already paid"
             if ($post_data->status == 1) {
                 $notify = 1;
-                $comment = sprintf($this->language->get('text_comment'), $post_data->tracking_code);
+                $comment = sprintf($config['text_to_customer'], $post_data->tracking_code);
             } else {
                 $notify = 0;
-                $comment = sprintf($this->language->get('text_tag'), $post_data->tracking_code, $post_data->tracking_code);
+                $comment = sprintf($config['text_to_store'], $post_data->tracking_code, $post_data->tracking_code);
             }
 
-            // Add one additional order history for tracking code
-            $this->db->query("INSERT INTO " . DB_PREFIX . "order_history SET order_id = '" . (int) $order_info['order_id'] . "', order_status_id = '" . (int) $order_status_id . "', notify = '" . (int) $notify . "', comment = '" . $this->db->escape($comment) . "', date_added = NOW()");
+            $order->set_status($order_new_status);
+            $order->add_order_note($comment, $notify);
+            $order->save();
         }
 
-        // Store Post Data At Session
-        $this->session->data['balcaobalcao'] = $post_data;
+        // Log
+        $this->write_log('sendOrder return: ' . json_encode($post_data));
 
         // Return Post Data
         return $post_data;
@@ -425,7 +424,7 @@ class BalcaoBalcao
 
             $text = date('Y-m-d H:i:s').' ---- '.$message.PHP_EOL.PHP_EOL;
 
-            if (is_writable($filename)) {
+            if (fopen($filename, "ab+") && is_writable($filename)) {
                 if (!$handle = fopen($filename, 'a')) {
                     echo __("Não foi possível abrir o arquivo ($filename)");
                     exit;
