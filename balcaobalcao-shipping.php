@@ -41,21 +41,28 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     /**
                      * Load settings
                      */
-                    $this->title = isset($this->settings['title']) ? $this->settings['title'] : __('Balcão Balcão', 'balcaobalcao_shipping');
-                    $this->is_enabled = isset($this->settings['is_enabled']) ? $this->settings['is_enabled'] : 'yes';
-                    $this->token = isset($this->settings['token']) ? $this->settings['token'] : null;
-                    $this->endpoint = isset($this->settings['endpoint']) ? $this->settings['endpoint'] : null;
-                    $this->return_url = isset($this->settings['return_url']) ? $this->settings['return_url'] : null;
-                    $this->postcode = isset($this->settings['postcode']) ? $this->settings['postcode'] : null;
-                    $this->additional_time = isset($this->settings['additional_time']) ? $this->settings['additional_time'] : null;
-                    $this->order_status_send = isset($this->settings['order_status_send']) ? $this->settings['order_status_send'] : null;
-                    $this->order_status_cancel = isset($this->settings['order_status_cancel']) ? $this->settings['order_status_cancel'] : null;
-                    $this->order_status_agent = isset($this->settings['order_status_agent']) ? $this->settings['order_status_agent'] : null;
-                    $this->order_status_sent = isset($this->settings['order_status_sent']) ? $this->settings['order_status_sent'] : null;
-                    $this->order_status_destiny = isset($this->settings['order_status_destiny']) ? $this->settings['order_status_destiny'] : null;
-                    $this->order_status_customer = isset($this->settings['order_status_customer']) ? $this->settings['order_status_customer'] : null;
-                    $this->total = isset($this->settings['total']) ? $this->settings['total'] : null;
-                    $this->tax = isset($this->settings['tax']) ? $this->settings['tax'] : null;
+                    $this->config['is_enabled'] = isset($this->settings['is_enabled']) ? $this->settings['is_enabled'] : 'yes';
+                    $this->config['debug'] = isset($this->settings['debug']) ? $this->settings['debug'] : 'no';
+                    $this->config['title'] = isset($this->settings['title']) ? $this->settings['title'] : __('Balcão Balcão', 'balcaobalcao_shipping');
+                    $this->config['token'] = isset($this->settings['token']) ? $this->settings['token'] : null;
+                    $this->config['endpoint'] = isset($this->settings['endpoint']) ? $this->settings['endpoint'] : null;
+                    $this->config['return_url'] = isset($this->settings['return_url']) ? $this->settings['return_url'] : null;
+                    $this->config['postcode'] = isset($this->settings['postcode']) ? $this->settings['postcode'] : null;
+                    $this->config['additional_time'] = isset($this->settings['additional_time']) ? $this->settings['additional_time'] : null;
+                    $this->config['order_status_send'] = isset($this->settings['order_status_send']) ? $this->settings['order_status_send'] : null;
+                    $this->config['order_status_cancel'] = isset($this->settings['order_status_cancel']) ? $this->settings['order_status_cancel'] : null;
+                    $this->config['order_status_agent'] = isset($this->settings['order_status_agent']) ? $this->settings['order_status_agent'] : null;
+                    $this->config['order_status_sent'] = isset($this->settings['order_status_sent']) ? $this->settings['order_status_sent'] : null;
+                    $this->config['order_status_destiny'] = isset($this->settings['order_status_destiny']) ? $this->settings['order_status_destiny'] : null;
+                    $this->config['order_status_customer'] = isset($this->settings['order_status_customer']) ? $this->settings['order_status_customer'] : null;
+                    $this->config['total'] = isset($this->settings['total']) ? $this->settings['total'] : null;
+                    $this->config['tax'] = isset($this->settings['tax']) ? $this->settings['tax'] : null;
+
+                    require_once('includes/balcaobalcao.php');
+                    $this->balcaobalcao = new BalcaoBalcao($this->config);
+
+                    require_once('includes/helpers.php');
+                    $this->helpers = new Helpers();
                 }
                 /**
                  * Init your settings
@@ -82,14 +89,20 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 function init_form_fields()
                 {
                     $this->form_fields = array(
+                        'is_enabled' => array(
+                            'title' => __('Habilitado', 'balcaobalcao_shipping'),
+                            'type' => 'checkbox'
+                        ),
+                        'debug' => array(
+                            'title' => __('Logs', 'balcaobalcao_shipping'),
+                            'label' => __('Habilitado', 'balcaobalcao_shipping'),
+                            'desc_tip' => __('Habilita os logs de erros. Os logs são salvos em wp-content/balcaobalcao-shipping/logs.', 'balcaobalcao_shipping'),
+                            'type' => 'checkbox'
+                        ),
                         'title' => array(
                             'title' => __('Título', 'balcaobalcao_shipping'),
                             'type' => 'text',
                             'default' => __('Balcão Balcão', 'balcaobalcao_shipping')
-                        ),
-                        'is_enabled' => array(
-                            'title' => __('Habilitado', 'balcaobalcao_shipping'),
-                            'type' => 'checkbox'
                         ),
                         'token' => array(
                             'title' => __('Token *', 'balcaobalcao_shipping'),
@@ -142,7 +155,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             )
                         ),
                         'order_status_send' => array(
-                            'title' => __('Status Envio *'),
+                            'title' => __('Status Envio *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que cadastra o pedido no Balcão Balcão (podem ser múltiplas). Padrão: Processando.', 'balcaobalcao_shipping'),
                             'type' => 'multiselect',
                             'css' => 'height: 150px',
@@ -152,7 +165,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             )
                         ),
                         'order_status_cancel' => array(
-                            'title' => __('Status Cancelamento *'),
+                            'title' => __('Status Cancelamento *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que cancela o pedido no Balcão Balcão (podem ser múltiplas). Padrão: Cancelado.', 'balcaobalcao_shipping'),
                             'type' => 'multiselect',
                             'css' => 'height: 150px',
@@ -162,7 +175,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             )
                         ),
                         'order_status_agent' => array(
-                            'title' => __('Status Agente Origem *'),
+                            'title' => __('Status Agente Origem *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o agente de origem confirma o recebimento dos produtos para envio. Padrão: Despachado.', 'balcaobalcao_shipping'),
                             'type' => 'select',
                             'options' => wc_get_order_statuses(),
@@ -171,13 +184,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             )
                         ),
                         'order_status_sent' => array(
-                            'title' => __('Status Encaminhado ao Destino'),
+                            'title' => __('Status Encaminhado ao Destino', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o agente de origem encaminha ao agente de destino. Padrão: Despachado.', 'balcaobalcao_shipping'),
                             'type' => 'select',
                             'options' => wc_get_order_statuses(),
                         ),
                         'order_status_destiny' => array(
-                            'title' => __('Status Agente Destino *'),
+                            'title' => __('Status Agente Destino *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o pedido chega no agente de destino. Padrão: Completo.', 'balcaobalcao_shipping'),
                             'type' => 'select',
                             'options' => wc_get_order_statuses(),
@@ -186,7 +199,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             )
                         ),
                         'order_status_customer' => array(
-                            'title' => __('Status Retirado'),
+                            'title' => __('Status Retirado', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando é o pedido foi retirado pelo cliente.', 'balcaobalcao_shipping'),
                             'type' => 'select',
                             'options' => wc_get_order_statuses(),
@@ -198,7 +211,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             'class' => 'number-mask',
                         ),
                         'tax' => array(
-                            'title' => __('Taxa'),
+                            'title' => __('Taxa', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Embutir taxa do Balcão Balcão sobre o valor do frete. Se ativo o cliente recebe a taxa acrescida no valor do frete, se inativo a loja assume a taxa.', 'balcaobalcao_shipping'),
                             'type' => 'select',
                             'options' => array(
@@ -223,7 +236,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 public function calculate_shipping($package = array())
                 {
                     // Check the minimum value
-                    if( ($package['contents_cost'] < $this->total) || $this->is_enabled == 'no') {
+                    if( ($package['contents_cost'] < $this->config['total']) || $this->config['is_enabled'] == 'no') {
                         return false;
                     }
 
@@ -231,7 +244,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $products = $package['contents'];
 
                     //Adicionar ao tempo qualquer outro valor ex.: Caso exista prazo de fabricação por produto
-                    $additional_time = (int) $this->additional_time;
+                    $additional_time = (int) $this->config['additional_time'];
 
                     foreach ($products as $key => $product) {
 
@@ -242,12 +255,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         $woocommerce_dimension_unit = get_option('woocommerce_dimension_unit');
 
                         // Converte para metros, medidas são unitárias
-                        $product['width']  = $this->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_width());
-                        $product['height'] = $this->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_height());
-                        $product['length'] = $this->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_length());
+                        $product['width']  = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_width());
+                        // $product['height'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_height());
+                        $product['height'] = 1;
+                        $product['length'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_length());
 
                         // O peso do produto não é unitário como a dimensão, é multiplicado pela quantidade.
-                        $product['weight'] = $this->getWeightInKg($woocommerce_weight_unit, $product['data']->get_weight()) / $product['quantity'];
+                        $product['weight'] = $this->helpers->getWeightInKg($woocommerce_weight_unit, $product['data']->get_weight()) / $product['quantity'];
 
                         $products_data[$key] = [
                             'quantity' => $product['quantity'],
@@ -258,17 +272,19 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         ];
                     }
 
-                    // $api_data = [
-                    //     'from'            => $this->config->get('balcaobalcao_postcode'),
-                    //     'to'              => $address['postcode'],
-                    //     'value'           => $subtotal,
-                    //     'products'        => $products_data,
-                    //     'token'           => $this->config->get('balcaobalcao_token'),
-                    //     'additional_time' => $additional_time,
-                    //     'tax'             => $this->config->get('balcaobalcao_tax'),
-                    // ];
+                    $api_data = [
+                        'from'            => $this->config['postcode'],
+                        'to'              => $package['destination']['postcode'],
+                        'value'           => $package['cart_subtotal'],
+                        'products'        => $products_data,
+                        'token'           => $this->config['token'],
+                        'additional_time' => $additional_time,
+                        'tax'             => $this->config['tax'],
+                    ];
 
-                    // echo '<pre>';die(var_dump($products_data));
+                    $json = $this->balcaobalcao->getData('shipping/find', $api_data);
+
+                    echo '<pre>';die(var_dump($json));
 
                     $rate = array(
                         array(
@@ -286,6 +302,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         ),
                     );
 
+
                     // Register the rate
                     foreach ($rate as $key => $value) {
                         $this->add_rate($value);
@@ -301,37 +318,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     // Load custom js
                     wp_register_script('balcaobalcao-shipping-custom', WC()->plugin_url() . '/../balcaobalcao-shipping/assets/js/custom.js', array('wc-clipboard'), WC_VERSION);
                     wp_enqueue_script('balcaobalcao-shipping-custom');
-                }
-
-                // retorna a dimensão em metros
-                private function getSizeInMeters($unit, $dimension)
-                {
-                    if (is_numeric($dimension)) {
-                        if ($unit == 'mm') { //Milímetro
-                            $dimension = $dimension / 1000;
-                        } else if ($unit == 'cm') { // Centímetro
-                            $dimension = $dimension / 100;
-                        } else if ($unit == 'in') { // Polegada
-                            $dimension = $dimension / 39.37;
-                        }
-                    }
-
-                    return (float) $dimension;
-                }
-
-                // retorna o peso em quilogramas
-                private function getWeightInKg($unit, $weight)
-                {
-                    if (is_numeric($weight)) {
-                        if ($unit == 'g') { //Gramas
-                            $weight = $weight / 1000;
-                        } else if ($unit == 'oz') { //Onça
-                            $weight = $weight / 35.274;
-                        } else if ($unit == 'lb') { //Líbra
-                            $weight = $weight / 2.205;
-                        }
-                    }
-                    return (float) $weight;
                 }
             }
         }
