@@ -5,7 +5,6 @@ Plugin URI: https://www.balcaobalcao.com.br/
 Description: Envio de mercadorias via Balcão Balcão
 Version: 1.0.0
 Author: balcaobalcao
-Author URI: https://www.balcaobalcao.com.br/
 */
 
 /**
