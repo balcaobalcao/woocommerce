@@ -90,6 +90,11 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                  */
                 function init_form_fields()
                 {
+                    $woocommerce_status = array_merge(
+                        array('' => __('Não atualizar')),
+                        wc_get_order_statuses()
+                    );
+
                     $this->form_fields = array(
                         'is_enabled' => array(
                             'title' => __('Habilitado', 'balcaobalcao_shipping'),
@@ -180,7 +185,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             'title' => __('Status Agente Origem *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o agente de origem confirma o recebimento dos produtos para envio. Padrão: Despachado.', 'balcaobalcao_shipping'),
                             'type' => 'select',
-                            'options' => wc_get_order_statuses(),
+                            'options' => $woocommerce_status,
                             'custom_attributes' => array(
                                 'required' => 'required',
                             )
@@ -189,13 +194,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             'title' => __('Status Encaminhado ao Destino', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o agente de origem encaminha ao agente de destino. Padrão: Despachado.', 'balcaobalcao_shipping'),
                             'type' => 'select',
-                            'options' => wc_get_order_statuses(),
+                            'options' => $woocommerce_status,
                         ),
                         'order_status_destiny' => array(
                             'title' => __('Status Agente Destino *', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando o pedido chega no agente de destino. Padrão: Completo.', 'balcaobalcao_shipping'),
                             'type' => 'select',
-                            'options' => wc_get_order_statuses(),
+                            'options' => $woocommerce_status,
                             'custom_attributes' => array(
                                 'required' => 'required',
                             )
@@ -204,7 +209,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             'title' => __('Status Retirado', 'balcaobalcao_shipping'),
                             'desc_tip' => __('Situação do pedido que é definida quando é o pedido foi retirado pelo cliente.', 'balcaobalcao_shipping'),
                             'type' => 'select',
-                            'options' => wc_get_order_statuses(),
+                            'options' => $woocommerce_status,
                         ),
                         'total' => array(
                             'title' => __('Valor Mínimo', 'balcaobalcao_shipping'),
@@ -332,22 +337,53 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
         return $methods;
     }
 
-    add_action('woocommerce_thankyou', 'send_balcaobalcao_quote');
-    function send_balcaobalcao_quote($order_id)
+    add_action('woocommerce_thankyou', 'balcaobalcao_send_quote');
+    function balcaobalcao_send_quote($order_id)
     {
         if (!$order_id) {
             return;
         }
 
         $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
-        $order_status_send = end($balcaobalcao_shipping->config['order_status_send']);
+        $list_order_status_send = $balcaobalcao_shipping->config['order_status_send'];
 
         $order = wc_get_order($order_id);
         $current_order_status = 'wc-'.$order->get_status();
 
-        // Se o status atual do pedido for igual ao status configurado em "Status Envio"
-        if($order_status_send == $current_order_status) {
-            $balcaobalcao_shipping->balcaobalcao->sendOrder($balcaobalcao_shipping->config, $order, $order_status_send);
+        // Valida para enviar pro Balcão Balcão apenas uma vez
+        $shipping_info = $order->get_items('shipping');
+        foreach ($shipping_info as $key => $shipping) {
+            if($shipping->get_meta('Código de Rastreio')) {
+                return;
+            }
+        }
+
+        foreach ($list_order_status_send as $key => $order_status_send) {
+            // Se o status atual do pedido for igual ao status configurado em "Status Envio"
+            if($order_status_send == $current_order_status) {
+                $balcaobalcao_shipping->balcaobalcao->sendOrder($balcaobalcao_shipping->config, $order, $order_status_send);
+            }
         }
     }
+
+    add_action('woocommerce_order_status_changed', 'balcaobalcao_change_order_status', 10, 3);
+    function balcaobalcao_change_order_status($order_id, $status_old, $status_new)
+    {
+        if (!$order_id) {
+            return;
+        }
+
+        $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+        $list_order_status_cancel = $balcaobalcao_shipping->config['order_status_cancel'];
+
+        $order = wc_get_order($order_id);
+
+        foreach ($list_order_status_cancel as $key => $order_status_send) {
+            // Se o status atual do pedido for igual ao status configurado em "Status Envio"
+            if ($order_status_send == 'wc-'.$status_new) {
+                $balcaobalcao_shipping->balcaobalcao->updateOrder($balcaobalcao_shipping->config, $order, 2/*cancelado*/);
+            }
+        }
+    }
+
 }

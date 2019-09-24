@@ -312,7 +312,7 @@ class BalcaoBalcao
         if ($post_data && isset($post_data->tracking_code)) {
 
             // Update tracking code with the returned code
-            end($shipping_info)->update_meta_data(__('Código de Rastreio'), $post_data->tracking_code);
+            end($shipping_info)->update_meta_data('Código de Rastreio', $post_data->tracking_code);
 
             // if tag is "already paid"
             if ($post_data->status == 1) {
@@ -341,23 +341,20 @@ class BalcaoBalcao
      * @param int $order_id
      * @return object
      */
-    public function updateOrder($order_id, $status)
+    public function updateOrder($config, WC_Order $order, $order_new_status)
     {
-        // Get BB Token
-        $token = $this->config->get('balcaobalcao_token');
-
         // Prepare Data
         $data = array(
-            'token' => $token,
-            'order_id' => $order_id,
-            'status_id' => $status,
+            'token' => $config['token'],
+            'order_id' => $order->get_id(),
+            'status_id' => $order_new_status,
         );
 
         // Post Data
-        $post_data = $this->balcaobalcao->post('order/update-status', $data, 'PATCH');
+        $post_data = $this->post('order/update-status', $data, 'PATCH');
 
-        // Store Post Data At Session
-        $this->session->data['balcaobalcao'] = $post_data;
+        // Log
+        $this->write_log('updateOrder return: ' . json_encode($post_data));
 
         // Return Post Data
         return $post_data;
