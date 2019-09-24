@@ -18,11 +18,15 @@ class BalcaoBalcao
     public function getData($uri = 'shipping/find', $data)
     {
         $url = $this->api_endpoint . $uri . '?' . http_build_query($data);
+
+        // Log
         $this->write_log('Quote requested: ' . $url);
+
         $api_data = $this->getAPIData($url);
         $json = json_decode($api_data);
 
-        if(isset($json->status_code) && $json->status_code == 422 && $this->config['debug'] == 'yes') {
+        if(isset($json->status_code) && $json->status_code == 422) {
+            // Log
             $this->write_log(json_encode($json));
         }
 
@@ -34,26 +38,16 @@ class BalcaoBalcao
         $query = http_build_query($data);
         $url = $this->api_endpoint . $uri;
 
+        // Log
         $this->write_log('Post data: ' . $url . '?' . $query);
 
         $api_data = $this->postAPIData($url, $query, $method);
         $json = json_decode($api_data);
 
-        if(isset($json->status_code) && $json->status_code == 422 && $this->config['debug'] == 'yes') {
+        if(isset($json->status_code) && $json->status_code == 422) {
+            // Log
             $this->write_log(json_encode($json));
         }
-
-        return $json;
-    }
-
-    private function _force_error($message)
-    {
-        $json = json_encode([
-            'status_code' => 408,
-            'message' => $message,
-        ]);
-
-        $this->write_log($json);
 
         return $json;
     }
@@ -97,111 +91,12 @@ class BalcaoBalcao
 
             $server_output = curl_exec($ch);
 
-            $lang_error_reconexao = $this->language->get('error_reconexao');
-            $server_output = $this->_force_error($lang_error_reconexao);
+            $this->_force_error(__('Não foi possível conectar na API.'));
         }
 
         curl_close($ch);
 
         return $server_output;
-    }
-
-    /**
-     * Verifica se contém a palavra balcabalcao no shipping_code do pedido.
-     *
-     * @param array $order_info
-     * @return bool
-     */
-    public function checkIfIsABBOrder($order_info)
-    {
-        echo '<pre>';die(var_dump('ORDER_INFO', $order_info));
-        return strpos($order_info['shipping_code'], 'balcaobalcao') !== FALSE;
-    }
-
-    /**
-     * Verifica se deve enviar um pedido através do status configurado.
-     * Certificando também que não exista o código de rastreio
-     *
-     * @param int $order_id
-     * @param int $status_id
-     * @return bool
-     */
-    public function checkIfMustSendOrder($order_id, $status_id, $situation = 'store')
-    {
-        $res = false;
-        $send_status = $this->config->get('balcaobalcao_order_status_send');
-        //Valida se o status está dentre os definidos
-        if ($send_status && in_array($status_id, $send_status)) {
-
-            //Valida se já foi integrado
-            $query = $this->db->query("SELECT COUNT(*) as total FROM " . DB_PREFIX . "order_balcaobalcao WHERE tracking_code IS NOT NULL AND order_id = '" . (int) $order_id . "'");
-            $res = ($query->row['total'] == 0);
-
-            if ($situation == 'activate' && $query->row['total'] == 1)
-                $res = true;
-        }
-
-        return $res;
-    }
-
-    /**
-     * Verifica se deve cancelar um pedido através do status configurado.
-     *
-     * @param int $status_id
-     * @return bool
-     */
-    public function checkIfMustCancelOrder($status_id)
-    {
-        $cancel_status = $this->config->get('balcaobalcao_order_status_cancel');
-        return $cancel_status && in_array($status_id, $cancel_status);
-    }
-
-    /**
-     * Ajusta os dados do shipping_method e totals antes de salvar no db
-     * @param array $data
-     * @return array
-     * @author Fábio Neis <fabio@ezoom.com.br>
-     */
-    public function fixOrderData($data)
-    {
-        $data['shipping_extras'] = $this->session->data['shipping_method']['extras'];
-        $extra = json_decode($data['shipping_extras'], true);
-        if (isset($extra['name'])) {
-            $data['shipping_method'] = trim($extra['name']);
-            if (isset($data['totals'])) {
-                foreach ($data['totals'] as $key => $total) {
-                    if ($total['code'] == 'shipping') {
-                        $data['totals'][$key]['title'] = trim($extra['name']);
-                    }
-                }
-            }
-        }
-        return $data;
-    }
-
-    /**
-     * Seta para notificado o histórico do pedido quando vem o retorno da api
-     * Serve apenas para exibir o texto do histórico para o cliente mas não enviar o e-mail da loja
-     *
-     * @param int $order
-     * @param int $order_status_id
-     * @param string $comment
-     * @return boolean
-     * @author Fábio Neis <fabio@ezoom.com.br>
-     */
-    public function fixOrderHistory($order_id, $order_status_id, $comment = '')
-    {
-        $query = $this->db->query("
-            UPDATE " . DB_PREFIX . "order_history SET notify = 1
-            WHERE order_id = '" . (int) $order_id . "'
-            AND order_status_id = '" . (int) $order_status_id . "'
-            AND notify = 0
-            AND comment = '" . $this->db->escape($comment) . "'
-            ORDER BY date_added DESC
-            LIMIT 1
-        ");
-
-        return $query;
     }
 
     /**
@@ -232,13 +127,13 @@ class BalcaoBalcao
 
             $product_detail = $product->get_product();
 
-            // Get store weight unit
+            // Busca a unidade de peso da loja.
             $woocommerce_weight_unit = get_option('woocommerce_weight_unit');
 
-            // Get store dimension unit
+            // Busca a unidade de medida da loja.
             $woocommerce_dimension_unit = get_option('woocommerce_dimension_unit');
 
-            // Converte para metros, medidas são unitárias
+            // Converte para metros, medidas são unitárias.
             $product_info['width']  = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_width());
             $product_info['height'] = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_height());
             $product_info['length'] = $balcaobalcao_shipping->helpers->getSizeInMeters($woocommerce_dimension_unit, $product_detail->get_length());
@@ -270,20 +165,20 @@ class BalcaoBalcao
 
         $order_info['shipping_token'] = $shipping_token;
 
-        // Prepara o nome do usuário
+        // Prepara o nome do usuário.
         if (trim($order_info['shipping_firstname'])) {
             $customer_name = $order_info['shipping_firstname'] . ' ' . $order_info['shipping_lastname'];
         } else {
             $customer_name = $order_info['firstname'] . ' ' . $order_info['lastname'];
         }
 
-        // Define o endereço
+        // Define o endereço.
         $address = trim($order_info['shipping_address_1'] . ' ' . $order_info['shipping_address_2']);
         $address_number = $order->get_meta('_billing_number');
         $address_complement = trim($order_info['shipping_address_2']);
         $document = $order->get_meta('_billing_cpf');
 
-        // Prepare Post Data
+        // Prepara as informações para enviar para a API.
         $data = array(
             'token'      => $config['token'],
             'return_url' => $config['return_url'],
@@ -305,16 +200,14 @@ class BalcaoBalcao
             ),
         );
 
-        // Post Data
         $post_data = $this->post('order/store', $data);
 
-        // If success
         if ($post_data && isset($post_data->tracking_code)) {
 
-            // Update tracking code with the returned code
+            // Atualiza o tracking code com o código recebido da API.
             end($shipping_info)->update_meta_data('Código de Rastreio', $post_data->tracking_code);
 
-            // if tag is "already paid"
+            // Se o status da tag for "already paid"
             if ($post_data->status == 1) {
                 $notify = 1;
                 $comment = sprintf($config['text_to_customer'], $post_data->tracking_code);
@@ -331,7 +224,6 @@ class BalcaoBalcao
         // Log
         $this->write_log('sendOrder return: ' . json_encode($post_data));
 
-        // Return Post Data
         return $post_data;
     }
 
@@ -341,71 +233,40 @@ class BalcaoBalcao
      * @param int $order_id
      * @return object
      */
-    public function updateOrder($config, WC_Order $order, $order_new_status)
+    public function updateOrder($config, $order_id, $order_new_status)
     {
-        // Prepare Data
+        // Prepara as informações para enviar para a API.
         $data = array(
             'token' => $config['token'],
-            'order_id' => $order->get_id(),
+            'order_id' => $order_id,
             'status_id' => $order_new_status,
         );
 
-        // Post Data
         $post_data = $this->post('order/update-status', $data, 'PATCH');
 
         // Log
         $this->write_log('updateOrder return: ' . json_encode($post_data));
 
-        // Return Post Data
         return $post_data;
     }
 
     /**
-     * Salva no banco de dados a forma de transporte escolhida
-     * @param [int] $order_id
-     * @param [json] $shipping_extras
+     * Força erro 408
+     * @param string $message
      * @return void
-     * @author Fábio Neis <fabio@ezoom.com.br>
+     * @author Bruno Marsilio <bruno@ezoom.com.br>
      */
-    public function addOrder($order_id, $shipping_extras)
+    private function _force_error($message)
     {
-        $shipping_extras = json_decode($shipping_extras, true);
-        $params = array_merge(
-            array(
-                'order_id'      => $order_id,
-                'tracking_code' => 'NULL',
-                'name'          => 'NULL',
-                'address'       => 'NULL',
-                'price'         => 0.00,
-                'deadline'      => 'NULL',
-                'token'         => 'NULL',
-            ),
-            $shipping_extras
-        );
+        $json = json_encode([
+            'status_code' => 408,
+            'message' => $message,
+        ]);
 
-        //Organiza o array caso venha valores inválidos
-        $params = $this->fixBeforeAddOrder($params);
+        // Log
+        $this->write_log($json);
 
-        $this->model_shipping_balcaobalcao->addOrder($params);
-    }
-
-    /**
-     * Altera valores vazios por nulos
-     *
-     * @param Array $params
-     * @return Array
-     * @author Fábio Neis <fabio@ezoom.com.br>
-     */
-    public function fixBeforeAddOrder($params)
-    {
-        $params = array_map(function ($item) {
-            if (is_array($item))
-                return $this->fixBeforeAddOrder($item);
-            else
-                return (trim($item) == '' || $item === NULL) ? 'NULL' : $item;
-        }, $params);
-
-        return $params;
+        return $json;
     }
 
     /**

@@ -1,15 +1,15 @@
 <?php
 /*
 Plugin Name: Balcão Balcão
-Plugin URI: https://woocommerce.com/
-Description: Your shipping method plugin
+Plugin URI: https://balcaobalcao.com.br/
+Description: Envio de mercadorias via Balcão Balcão
 Version: 1.0.0
-Author: WooThemes
-Author URI: https://woocommerce.com/
+Author: Balcão Balcão
+Author URI: ttps://balcaobalcao.com.br/
 */
 
 /**
- * Check if WooCommerce is active
+ * Valida se o Woocommerce está ativo.
  */
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
 
@@ -20,17 +20,17 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             class WC_Balcaobalcao_Shipping_Method extends WC_Shipping_Method
             {
                 /**
-                 * Constructor for your shipping class
+                 * Construtor da classe
                  *
                  * @access public
                  * @return void
                  */
                 public function __construct($instance_id = 0)
                 {
-                    $this->id                 = 'balcaobalcao_shipping'; // Id for your shipping method. Should be uunique.
+                    $this->id                 = 'balcaobalcao_shipping'; // Id do método de entrega.
                     $this->instance_id        = absint($instance_id);
-                    $this->method_title       = __('Balcão Balcão');  // Title shown in admin
-                    $this->method_description = __('Balcão Balcão API'); // Description shown in admin
+                    $this->method_title       = __('Balcão Balcão');  // Título mostrado no admin.
+                    $this->method_description = __('Balcão Balcão API'); // Descrição mostrada no admin.
                     $this->supports = array(
                         'shipping-zones',
                         'settings'
@@ -39,7 +39,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $this->init();
 
                     /**
-                     * Load settings
+                     * Carrega as configurações
                      */
                     $this->config['is_enabled'] = isset($this->settings['is_enabled']) ? $this->settings['is_enabled'] : 'yes';
                     $this->config['debug'] = isset($this->settings['debug']) ? $this->settings['debug'] : 'no';
@@ -57,8 +57,14 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $this->config['order_status_customer'] = isset($this->settings['order_status_customer']) ? $this->settings['order_status_customer'] : null;
                     $this->config['total'] = isset($this->settings['total']) ? $this->settings['total'] : null;
                     $this->config['tax'] = isset($this->settings['tax']) ? $this->settings['tax'] : null;
+
+                    // Textos fixos
                     $this->config['text_to_customer'] = __('Seu código de rastreio Balcão Balcão é %s, você pode acompanhar este pedido pelo nosso aplicativo Android ou iOS.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
                     $this->config['text_to_store'] = __('O código de rastreio Balcão Balcão para este pedido é %s. Entretanto não foi possível gerar o pedido automaticamente, efetue o pagamento da sua etiqueta em nosso dashboard <a href=\'https://dashboard.balcaobalcao.com.br/etiquetas/%s\' target=\'_blank\'>dashboard.balcaobalcao.com.br</a>. Você pode cadastrar seu cartão de crédito para automatizar este processo ou se você ainda não é correntista BB entre em contato conosco e solicite maiores informações.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
+                    $this->config['text_status_agent'] = __('Olá, seu pedido já está com nosso agente de origem e está sendo preparado para envio, utilize o código de rastreio %s para acompanhar pelo nosso aplicativo Android ou iOS.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
+                    $this->config['text_status_sent'] = __('Olá, seu pedido saiu da cidade de origem e está à caminho da agência BB que você escolheu, utilize o código de rastreio %s para acompanhar pelo nosso aplicativo Android ou iOS.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
+                    $this->config['text_status_destiny'] = __('Olá, seu pedido chegou na agência BB que você escolheu! A sua encomenda está ansiosa pelo encontro de vocês ;). Ah, não esqueça de levar seu documento com foto!<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
+                    $this->config['text_status_customer'] = __('O Balcão Balcão agradece pela confiança em nosso serviço.<br/><br/>Balcão Balcão, a encomenda na sua mão!<br/><a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
 
                     require_once('includes/balcaobalcao.php');
                     $this->balcaobalcao = new BalcaoBalcao($this->config);
@@ -66,25 +72,28 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     require_once('includes/helpers.php');
                     $this->helpers = new Helpers();
                 }
+
                 /**
-                 * Init your settings
+                 * Inicializa as configurações
                  *
                  * @access public
                  * @return void
                  */
                 function init()
                 {
-                    // Load the settings API
                     $this->load_scripts();
-                    $this->init_form_fields(); // This is part of the settings API. Override the method to add your own settings
-                    $this->init_settings(); // This is part of the settings API. Loads settings you previously init.
+                    $this->init_form_fields();
+                    $this->init_settings();
 
-                    // Save settings in admin if you have any defined
+                    // Salva as configurações definidas no admin.
                     add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
+
+                    // Cria o callback.
+                    add_action('woocommerce_api_' . $this->id, array($this, 'callback'));
                 }
 
                 /**
-                 * Init admin form fields
+                 * Inicia os campos do admin.
                  * @return void
                  * @author Bruno Marsiliio <bruno@ezoom.com.br>
                  */
@@ -131,7 +140,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         ),
                         'return_url' => array(
                             'title' => __('Url de Retorno *', 'balcaobalcao_shipping'),
-                            'desc_tip' => __('Url de retorno para recebimento do callback nas trocas de status no Balcão Balcão. Permite atualizar automaticamente a troca de status na loja.', 'balcaobalcao_shipping'),
+                            'desc_tip' => __('Url de retorno para recebimento do callback nas trocas de status no Balcão Balcão. Permite atualizar automaticamente a troca de status na loja. <br/>SEU_DOMINIO/?wc-api=balcaobalcao_shipping', 'balcaobalcao_shipping'),
                             'type' => 'text',
                             'custom_attributes' => array(
                                 'required' => 'required',
@@ -234,7 +243,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 }
 
                 /**
-                 * calculate_shipping function.
+                 * Calcula o frete.
                  *
                  * @access public
                  * @param mixed $package
@@ -242,27 +251,26 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                  */
                 public function calculate_shipping($package = array())
                 {
-
-                    // Check the minimum value
+                    // Valida o valor mínimo.
                     if( ($package['contents_cost'] < $this->config['total']) || $this->config['is_enabled'] == 'no') {
                         return false;
                     }
 
-                    // Get cart products
+                    // Busca os produtos do carrinho.
                     $products = $package['contents'];
 
-                    //Adicionar ao tempo qualquer outro valor ex.: Caso exista prazo de fabricação por produto
+                    //Adiciona ao tempo qualquer outro valor ex.: Caso exista prazo de fabricação por produto
                     $additional_time = (int) $this->config['additional_time'];
 
                     foreach ($products as $key => $product) {
 
-                        // Get store weight unit
+                        // Busca a unidade de peso da loja.
                         $woocommerce_weight_unit = get_option('woocommerce_weight_unit');
 
-                        // Get store dimension unit
+                        // Busca a unidade de medida da loja.
                         $woocommerce_dimension_unit = get_option('woocommerce_dimension_unit');
 
-                        // Converte para metros, medidas são unitárias
+                        // Converte para metros, medidas são unitárias.
                         $product['width']  = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_width());
                         $product['height'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_height());
                         $product['length'] = $this->helpers->getSizeInMeters($woocommerce_dimension_unit, $product['data']->get_length());
@@ -291,7 +299,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                     $json = $this->balcaobalcao->getData('shipping/find', $api_data);
 
-                    // Valida se retornou alguma cotação da API
+                    // Valida se retornou alguma cotação da API.
                     if($json->status_code == 422) {
                         return false;
                     }
@@ -310,20 +318,70 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         );
                     }
 
-                    // Register the rate
+                    // Registra a cotação.
                     foreach ($rate as $key => $value) {
                         $this->add_rate($value);
                     }
                 }
 
+                /**
+                 * Callback recebido da API do Balcão Balcão.
+                 * @return void
+                 * @author Bruno Marsilio <bruno@ezoom.com.br>
+                 */
+                public function callback()
+                {
+                    $order_id = $_POST['order_id'];
+                    $status_id = $_POST['status_id'];
+                    $tracking_code = $_POST['tracking_code'];
+
+                    if (!$order_id) {
+                        return;
+                    }
+
+                    // Busca o pedido.
+                    $order = wc_get_order($order_id);
+
+                    $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+                    $woocommerce_status = array(
+                        3 => $balcaobalcao_shipping->config['order_status_agent'],
+                        4 => $balcaobalcao_shipping->config['order_status_sent'],
+                        5 => $balcaobalcao_shipping->config['order_status_destiny'],
+                        6 => $balcaobalcao_shipping->config['order_status_customer']
+                    );
+
+                    $woocommerce_text_status = array(
+                        3 => $balcaobalcao_shipping->config['text_status_agent'],
+                        4 => $balcaobalcao_shipping->config['text_status_sent'],
+                        5 => $balcaobalcao_shipping->config['text_status_destiny'],
+                        6 => $balcaobalcao_shipping->config['text_status_customer']
+                    );
+
+                    $current_order_status = 'wc-'.$order->get_status();
+
+                    $order_new_status = NULL;
+                    $comment = NULL;
+
+                    if(isset($woocommerce_status[$status_id]) && $woocommerce_status[$status_id] != $current_order_status) {
+                        $order_new_status = $woocommerce_status[$status_id];
+                        $comment = isset($woocommerce_text_status[$status_id]) ? sprintf($woocommerce_text_status[$status_id], $tracking_code) : ' - ';
+                    }
+
+                    if($order_new_status && $comment) {
+                        $order->set_status($order_new_status);
+                        $order->add_order_note($comment, 1);
+                        $order->save();
+                    }
+                }
+
                 private function load_scripts()
                 {
-                    // Load jQueryMask
-                    wp_register_script('balcaobalcao-shipping-masks', WC()->plugin_url() . '/../balcaobalcao-shipping/assets/js/jquery-mask/jquery.mask.js', array('wc-clipboard'), WC_VERSION);
+                    // Carrega jQueryMask
+                    wp_register_script('balcaobalcao-shipping-masks', WC()->plugin_url() . '/../balcaobalcao-shipping/public/js/jquery-mask/jquery.mask.js', array('wc-clipboard'), WC_VERSION);
                     wp_enqueue_script('balcaobalcao-shipping-masks');
 
-                    // Load custom js
-                    wp_register_script('balcaobalcao-shipping-custom', WC()->plugin_url() . '/../balcaobalcao-shipping/assets/js/custom.js', array('wc-clipboard'), WC_VERSION);
+                    // Carrega custom js
+                    wp_register_script('balcaobalcao-shipping-custom', WC()->plugin_url() . '/../balcaobalcao-shipping/public/js/custom.js', array('wc-clipboard'), WC_VERSION);
                     wp_enqueue_script('balcaobalcao-shipping-custom');
                 }
             }
@@ -376,14 +434,10 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
         $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
         $list_order_status_cancel = $balcaobalcao_shipping->config['order_status_cancel'];
 
-        $order = wc_get_order($order_id);
-
         foreach ($list_order_status_cancel as $key => $order_status_send) {
-            // Se o status atual do pedido for igual ao status configurado em "Status Envio"
             if ($order_status_send == 'wc-'.$status_new) {
-                $balcaobalcao_shipping->balcaobalcao->updateOrder($balcaobalcao_shipping->config, $order, 2/*cancelado*/);
+                $balcaobalcao_shipping->balcaobalcao->updateOrder($balcaobalcao_shipping->config, $order_id, 2/*cancelado*/);
             }
         }
     }
-
 }
