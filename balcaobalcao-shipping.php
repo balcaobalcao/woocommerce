@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Balcão Balcão
-Plugin URI: https://balcaobalcao.com.br/
+Plugin URI: https://www.balcaobalcao.com.br/
 Description: Envio de mercadorias via Balcão Balcão
 Version: 1.0.0
-Author: Balcão Balcão
-Author URI: ttps://balcaobalcao.com.br/
+Author: balcaobalcao
+Author URI: https://www.balcaobalcao.com.br/
 */
 
 /**
