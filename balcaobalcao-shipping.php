@@ -375,12 +375,14 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 private function load_scripts()
                 {
+                    $plugin_dir = plugin_dir_url(__FILE__);
+
                     // Carrega jQueryMask
-                    wp_register_script('balcaobalcao-shipping-masks', WC()->plugin_url() . '/../balcaobalcao-shipping/public/js/jquery-mask/jquery.mask.js', array('wc-clipboard'), WC_VERSION);
+                    wp_register_script('balcaobalcao-shipping-masks', $plugin_dir . 'public/js/jquery-mask/jquery.mask.js', array('wc-clipboard'), WC_VERSION);
                     wp_enqueue_script('balcaobalcao-shipping-masks');
 
                     // Carrega custom js
-                    wp_register_script('balcaobalcao-shipping-custom', WC()->plugin_url() . '/../balcaobalcao-shipping/public/js/custom.js', array('wc-clipboard'), WC_VERSION);
+                    wp_register_script('balcaobalcao-shipping-custom', $plugin_dir . 'public/js/custom.js', array('wc-clipboard'), WC_VERSION);
                     wp_enqueue_script('balcaobalcao-shipping-custom');
                 }
             }

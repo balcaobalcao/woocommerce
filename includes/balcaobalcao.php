@@ -55,7 +55,7 @@ class BalcaoBalcao
     public function getAPIData($url)
     {
         $args = array(
-            'timeout' => 30
+            'timeout' => '30'
         );
 
         $response = wp_remote_get($url, $args);
@@ -92,7 +92,6 @@ class BalcaoBalcao
         $server_output = wp_remote_retrieve_body($response);
 
         if (!$server_output) {
-
             $this->_force_error(__('Não foi possível conectar na API.'));
         }
 
@@ -278,7 +277,7 @@ class BalcaoBalcao
     private function write_log($message)
     {
         if($this->config['debug'] == 'yes') {
-            $filename = getcwd(). '/wp-content/plugins/balcaobalcao-shipping/logs/balcaobalcao.log';
+            $filename = plugin_dir_path(__FILE__) . '../logs/balcaobalcao.log';
 
             $text = date('Y-m-d H:i:s').' ---- '.$message.PHP_EOL.PHP_EOL;
 
