@@ -330,9 +330,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                  */
                 public function callback()
                 {
-                    $order_id = $_POST['order_id'];
-                    $status_id = $_POST['status_id'];
-                    $tracking_code = $_POST['tracking_code'];
+                    $order_id = sanitize_text_field($_POST['order_id']);
+                    $status_id = sanitize_text_field($_POST['status_id']);
+                    $tracking_code = sanitize_text_field($_POST['tracking_code']);
 
                     if (!$order_id) {
                         return;
