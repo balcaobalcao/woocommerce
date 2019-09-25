@@ -41,7 +41,7 @@ class BalcaoBalcao
         // Log
         $this->write_log('Post data: ' . $url . '?' . $query);
 
-        $api_data = $this->postAPIData($url, $query, $method);
+        $api_data = $this->postAPIData($url, $data, $method);
         $json = json_decode($api_data);
 
         if(isset($json->status_code) && $json->status_code == 422) {
@@ -54,47 +54,47 @@ class BalcaoBalcao
 
     public function getAPIData($url)
     {
-        $ch = curl_init();
+        $args = array(
+            'timeout' => 30
+        );
 
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $server_output = curl_exec($ch);
+        $response = wp_remote_get($url, $args);
+        $server_output = wp_remote_retrieve_body($response);
 
         if (!$server_output) {
             $server_output = $this->_force_error(__('Não foi possível conectar na API.'));
         }
 
-        curl_close($ch);
-
         return $server_output;
     }
 
-    public function postAPIData($url, $data, $method)
+    public function postAPIData($url, array $data, $method)
     {
-        $ch = curl_init();
+        $body = $data;
+        $args = array(
+            'body' => $body,
+            'timeout' => '30',
+            'redirection' => '5',
+            'httpversion' => '1.0',
+            'blocking' => true,
+            'headers' => array(),
+            'cookies' => array()
+        );
 
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        if($method == 'POST') {
+            $response = wp_remote_post($url, $args);
+        } else {
+            $args['method'] = $method;
 
-        $server_output = curl_exec($ch);
+            $response = wp_remote_request($url, $args);
+        }
+
+        $server_output = wp_remote_retrieve_body($response);
 
         if (!$server_output) {
 
-            $server_output = curl_exec($ch);
-
             $this->_force_error(__('Não foi possível conectar na API.'));
         }
-
-        curl_close($ch);
 
         return $server_output;
     }
