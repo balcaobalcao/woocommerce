@@ -68,8 +68,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     require_once('includes/balcaobalcao.php');
                     $this->balcaobalcao = new BalcaoBalcao($this->config);
 
-                    require_once('includes/helpers.php');
-                    $this->helpers = new Helpers();
+                    require_once('includes/balcaobalcao-helpers.php');
+                    $this->helpers = new Balcaobalcao_Helpers();
                 }
 
                 /**

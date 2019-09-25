@@ -1,6 +1,6 @@
 <?php
 
-Class Helpers
+Class Balcaobalcao_Helpers
 {
     // retorna a dimensão em metros
     public function getSizeInMeters($unit, $dimension)
