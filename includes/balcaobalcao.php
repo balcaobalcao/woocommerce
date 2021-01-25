@@ -25,7 +25,7 @@ class BalcaoBalcao
         $api_data = $this->getAPIData($url);
         $json = json_decode($api_data);
 
-        if(isset($json->status_code) && $json->status_code == 422) {
+        if (isset($json->status_code) && $json->status_code == 422) {
             // Log
             $this->write_log(json_encode($json));
         }
@@ -44,7 +44,7 @@ class BalcaoBalcao
         $api_data = $this->postAPIData($url, $data, $method);
         $json = json_decode($api_data);
 
-        if(isset($json->status_code) && $json->status_code == 422) {
+        if (isset($json->status_code) && $json->status_code == 422) {
             // Log
             $this->write_log(json_encode($json));
         }
@@ -59,6 +59,7 @@ class BalcaoBalcao
         );
 
         $response = wp_remote_get($url, $args);
+
         $server_output = wp_remote_retrieve_body($response);
 
         if (!$server_output) {
@@ -81,7 +82,7 @@ class BalcaoBalcao
             'cookies' => array()
         );
 
-        if($method == 'POST') {
+        if ($method == 'POST') {
             $response = wp_remote_post($url, $args);
         } else {
             $args['method'] = $method;
@@ -276,25 +277,14 @@ class BalcaoBalcao
      */
     private function write_log($message)
     {
-        if($this->config['debug'] == 'yes') {
-            $filename = plugin_dir_path(__FILE__) . '../logs/balcaobalcao.log';
+        if ($this->config['debug'] == 'yes') {
+            $filename = plugin_dir_path(__DIR__) . 'logs/balcaobalcao.log';
 
-            $text = date('Y-m-d H:i:s').' ---- '.$message.PHP_EOL.PHP_EOL;
+            $text = date('Y-m-d H:i:s') . ' ---- ' . $message . PHP_EOL . PHP_EOL;
 
-            if (fopen($filename, "ab+") && is_writable($filename)) {
-                if (!$handle = fopen($filename, 'a')) {
-                    echo __("Não foi possível abrir o arquivo ($filename)");
-                    exit;
-                }
-
-                if (fwrite($handle, $text) === FALSE) {
-                    echo "Não foi possível escrever no arquivo ($filename)";
-                    exit;
-                }
-
+            if ($handle = fopen($filename, 'a+')) {
+                fwrite($handle, $text);
                 fclose($handle);
-            } else {
-                echo __("O arquivo $filename não pode ser alterado");
             }
         }
     }
