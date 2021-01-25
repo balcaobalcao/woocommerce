@@ -84,6 +84,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           $this->init_form_fields();
           $this->init_settings();
 
+          $this->title = $this->get_option('title');
+
           // Salva as configurações definidas no admin.
           add_action('woocommerce_update_options_shipping_' . $this->id, array($this, 'process_admin_options'));
 
