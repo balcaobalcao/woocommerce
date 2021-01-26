@@ -3,7 +3,7 @@
 Plugin Name: Balcão Balcão
 Plugin URI: https://www.balcaobalcao.com.br/
 Description: Shipment via Balcão Balcão
-Version: 1.0.0
+Version: 1.0.5
 Author: balcaobalcao
 */
 
@@ -62,7 +62,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           $this->config['text_to_customer'] = __('Your tracking code is %s, you can track this order through our Android or iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
           $this->config['text_to_store'] = __('<b> Attention Shopkeeper: </b> This order tracking code is %s. If you already have registered your credit card, we will soon process your payment and notify you if any problems occur. If you have not yet registered, pay for this tag on our dashboard <a href=\'https://dashboard.balcaobalcao.com.br/etiquetas/%s\' target=\'_blank\'> dashboard.balcaobalcao.com.br </a>. You can register your credit card and authorize it to automate the payment process of the tags through our Dashboard, in the My Data area. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'> www.balcaobalcao.com.br </a>');
           $this->config['text_status_agent'] = __('Hello, your order is already with our origin agent and is being prepared for shipping, please use this tracking code %s to track through our website or from Android and iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
-          $this->config['text_status_sent'] = __('Hi, your order has left the origin city and it\'s on its way to the address you have chosen, please use the tracking code %s to track through our Android or iOS app. your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\"> www.balcaobalcao.com.br</a>');
+          $this->config['text_status_sent'] = __('Hi, your order has left the origin city and it\'s on its way to the address you have chosen, please use the tracking code %s to track through our Android or iOS app. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\"> www.balcaobalcao.com.br</a>');
           $this->config['text_status_hub'] = __('Hi, your order %s has arrived in our hub agent and soon it will continue it\'s journey!.<br/><br/>Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\"> www.balcaobalcao.com.br</a>');
           $this->config['text_status_destiny'] = __('Hello, your order has arrived at the BB agency you have chosen! Your order is looking forward to meeting you;). Oh, don\'t forget to bring your photo ID! <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\"target=\"_blank\">www.balcaobalcao.com.br</a>');
           $this->config['text_status_customer'] = __('Balcão Balcão thanks for your confidence in our service. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\"target=\"_blank\">www.balcaobalcao.com.br</a>');
