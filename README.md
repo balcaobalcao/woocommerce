@@ -6,7 +6,7 @@
 **Requires at least:** 5.2\
 **Tested up to:** 5.6\
 **Requires PHP:** 5.6\
-**Stable tag:** 1.1.0\
+**Stable tag:** 1.0.5\
 **License:** GPLv3 or later License\
 **URI:** http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -20,27 +20,28 @@ de quem utiliza:
 - Acompanhe seus fretes online e tenha uma visão geral dos pedidos efetuados.
 - Presente em mais de 1000 cidades do Brasil.
 
-## Woocommerce
+## WooCommerce
 Este repositório contém os arquivos de configuração do WooCommerce para integrar a cotação de frete e os pedidos diretamente com a API da Balcão Balcão.
 
 ### Instalação e Configuração
 #### Instalação Automática
-1. Acesse seu wordpress
+1. Acesse a área administrativa do seu Wordpress
 2. Em Plugins, clique em Adicionar Novo
 3. Pesquise por Balcão Balcão e instale o plugin
 
 #### Instalação Manual
 1. Faça o download deste repositório.
-2. Crie a pasta balcao-balcao em "wp-content/plugins" e cole o conteúdo deste repositório dentro da pasta "wp-content/plugins/balcao-balcao".
-3. Faço o login na área administrativa do seu wordpress e navegue para Plugins e ative o plugin Balcão Balcão.
+2. Crie a pasta "balcao-balcao" em "wp-content/plugins" e cole o conteúdo deste repositório dentro da pasta "wp-content/plugins/balcao-balcao".
+3. Faço o login na área administrativa do seu Wordpress e navegue para Plugins e ative o plugin Balcão Balcão.
 
 #### Configuração
-1. Após instalar e ativar o plugin, acesse o seu painel administrativo
+1. Após instalar e ativar o plugin
 2. Vá para WooCommerce > Configurações > Entrega e ative a Balcão Balcão para a região do Brasil.
-3. Após clique na região "Balcão Balcão" e configure o plugin com os dados da sua conta.
+3. Após clique na região "Balcão Balcão" e configure o plugin com os dados da sua conta na Balcão Balcão.
 
 ## Informações Adicionais
 
 * Necessário possuir o plugin [Brazilian Market on WooCommerce](https://wordpress.org/plugins/woocommerce-extra-checkout-fields-for-brazil/)
+* Configurações de links permanentes devem estar ativas e diferentes do padrão, com a configuração padrão não irá funcionar os callbacks.
 
 Em caso de dúvidas/sugestões entre em contato através do [nosso site](https://www.balcaobalcao.com.br).
