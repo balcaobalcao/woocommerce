@@ -93,7 +93,7 @@ class BalcaoBalcao
     $server_output = wp_remote_retrieve_body($response);
 
     if (!$server_output) {
-      $this->_force_error(__('Could not connect to API.'));
+      $this->_force_error(__('Could not connect to the API.'));
     }
 
     return $server_output;

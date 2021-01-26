@@ -59,13 +59,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           $this->config['tax'] = isset($this->settings['tax']) ? $this->settings['tax'] : null;
 
           // Textos fixos
-          $this->config['text_to_customer'] = __('Your tracking code is %s, you can track this order through our Android or iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'>www.balcaobalcao.com.br</a>');
-          $this->config['text_to_store'] = __('<b> Attention Shopkeeper: </b> This order tracking code is %s. If you already have registered your credit card, we will soon process your payment and notify you if any problems occur. If you have not yet registered, pay for this tag on our dashboard <a href=\'https://dashboard.balcaobalcao.com.br/etiquetas/%s\' target=\'_blank\'> dashboard.balcaobalcao.com.br </a>. You can register your credit card and authorize it to automate the payment process of the tags through our Dashboard, in the My Data area. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\'https://www.balcaobalcao.com.br/\' target=\'_blank\'> www.balcaobalcao.com.br </a>');
-          $this->config['text_status_agent'] = __('Hello, your order is already with our origin agent and is being prepared for shipping, please use this tracking code %s to track through our website or from Android and iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\">www.balcaobalcao.com.br</a>');
-          $this->config['text_status_sent'] = __('Hi, your order has left the origin city and it\'s on its way to the address you have chosen, please use the tracking code %s to track through our Android or iOS app. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\"> www.balcaobalcao.com.br</a>');
-          $this->config['text_status_hub'] = __('Hi, your order %s has arrived in our hub agent and soon it will continue it\'s journey!.<br/><br/>Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\" target=\"_blank\"> www.balcaobalcao.com.br</a>');
-          $this->config['text_status_destiny'] = __('Hello, your order has arrived at the BB agency you have chosen! Your order is looking forward to meeting you;). Oh, don\'t forget to bring your photo ID! <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\"target=\"_blank\">www.balcaobalcao.com.br</a>');
-          $this->config['text_status_customer'] = __('Balcão Balcão thanks for your confidence in our service. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href=\"https://www.balcaobalcao.com.br/\"target=\"_blank\">www.balcaobalcao.com.br</a>');
+          $this->config['text_to_customer'] = __('Your tracking code is %s, you can track this order through our Android or iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank">www.balcaobalcao.com.br</a>');
+          $this->config['text_to_store'] = __('<b> Attention Shopkeeper: </b> This order tracking code is %s. If you already have registered your credit card, we will soon process your payment and notify you if any problems occur. If you have not yet registered, pay for this tag on our dashboard <a href="https://dashboard.balcaobalcao.com.br/etiquetas/%s" target="_blank">dashboard.balcaobalcao.com.br</a>. You can register your credit card and authorize it to automate the payment process of the tags through our Dashboard, in the My Data area. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank"> www.balcaobalcao.com.br </a>');
+          $this->config['text_status_agent'] = __('Hello, your order is already with our origin agent and is being prepared for shipping, please use this tracking code %s to track through our website or from Android and iOS app. <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank">www.balcaobalcao.com.br</a>');
+          $this->config['text_status_sent'] = __('Hi, your order has left the origin city and it\'s on its way to the address you have chosen, please use the tracking code %s to track through our Android or iOS app. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank"> www.balcaobalcao.com.br</a>');
+          $this->config['text_status_hub'] = __('Hi, your order %s has arrived in our hub agent and soon it will continue it\'s journey!.<br/><br/>Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank"> www.balcaobalcao.com.br</a>');
+          $this->config['text_status_destiny'] = __('Hello, your order has arrived at the BB agency you have chosen! Your order is looking forward to meeting you;). Oh, don\'t forget to bring your photo ID! <br/> <br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank">www.balcaobalcao.com.br</a>');
+          $this->config['text_status_customer'] = __('Balcão Balcão thanks for your confidence in our service. <br/><br/> Balcão Balcão, the order in your hand! <br/> <a href="https://www.balcaobalcao.com.br/" target="_blank">www.balcaobalcao.com.br</a>');
 
           require_once('includes/balcaobalcao.php');
           $this->balcaobalcao = new BalcaoBalcao($this->config);
@@ -346,47 +346,60 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           }
 
           // Busca o pedido.
-          $order = wc_get_order($order_id);
+          $order = null;
+          $wcOrder = wc_get_order($order_id);
+          if ($wcOrder->has_shipping_method($this->id)) {
+            $shipping_info = $wcOrder->get_items('shipping');
+            foreach ($shipping_info as $key => $shipping) {
+              $tracking = $shipping->get_meta(__('Tracking Code', 'balcaobalcao_shipping'));
+              if ($tracking == $tracking_code) {
+                $order = $wcOrder;
+                break;
+              }
+            }
 
-          $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
-          $woocommerce_status = array(
-            3 => $balcaobalcao_shipping->config['order_status_agent'],
-            4 => $balcaobalcao_shipping->config['order_status_sent'],
-            5 => $balcaobalcao_shipping->config['order_status_destiny'],
-            6 => $balcaobalcao_shipping->config['order_status_customer'],
-            7 => $balcaobalcao_shipping->config['order_status_hub'],
-          );
+            if ($order) {
+              $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+              $woocommerce_status = array(
+                3 => $balcaobalcao_shipping->config['order_status_agent'],
+                4 => $balcaobalcao_shipping->config['order_status_sent'],
+                5 => $balcaobalcao_shipping->config['order_status_destiny'],
+                6 => $balcaobalcao_shipping->config['order_status_customer'],
+                7 => $balcaobalcao_shipping->config['order_status_hub'],
+              );
 
-          $woocommerce_text_status = array(
-            3 => $balcaobalcao_shipping->config['text_status_agent'],
-            4 => $balcaobalcao_shipping->config['text_status_sent'],
-            5 => $balcaobalcao_shipping->config['text_status_destiny'],
-            6 => $balcaobalcao_shipping->config['text_status_customer'],
-            7 => $balcaobalcao_shipping->config['text_status_hub'],
-          );
+              $woocommerce_text_status = array(
+                3 => $balcaobalcao_shipping->config['text_status_agent'],
+                4 => $balcaobalcao_shipping->config['text_status_sent'],
+                5 => $balcaobalcao_shipping->config['text_status_destiny'],
+                6 => $balcaobalcao_shipping->config['text_status_customer'],
+                7 => $balcaobalcao_shipping->config['text_status_hub'],
+              );
 
-          $order_new_status = NULL;
-          $comment = NULL;
-          if (isset($woocommerce_status[$status_id]) && !empty($woocommerce_status[$status_id])) {
-            $order_new_status = $woocommerce_status[$status_id];
-            $comment = isset($woocommerce_text_status[$status_id]) ? sprintf($woocommerce_text_status[$status_id], $tracking_code) : ' - ';
+              $order_new_status = NULL;
+              $comment = NULL;
+              if (isset($woocommerce_status[$status_id]) && !empty($woocommerce_status[$status_id])) {
+                $order_new_status = $woocommerce_status[$status_id];
+                $comment = isset($woocommerce_text_status[$status_id]) ? sprintf($woocommerce_text_status[$status_id], $tracking_code) : ' - ';
+              }
+
+              if ($order_new_status && $comment) {
+                $order->set_status($order_new_status);
+                $order->add_order_note($comment, 1);
+                $order->save();
+
+                return new WP_REST_Response(array(
+                  'status_code' => 200,
+                  'message' => __('Order successfully updated')
+                ));
+              }
+            }
           }
 
-          if ($order_new_status && $comment) {
-            $order->set_status($order_new_status);
-            $order->add_order_note($comment, 1);
-            $order->save();
-
-            return new WP_REST_Response(array(
-              'status_code' => 200,
-              'message' => __('Order successfully updated')
-            ));
-          } else {
-            return new WP_REST_Response(array(
-              'status_code' => 200,
-              'message' => __('No action required')
-            ));
-          }
+          return new WP_REST_Response(array(
+            'status_code' => 200,
+            'message' => __('No action required')
+          ));
         }
 
         private function load_scripts()
@@ -415,27 +428,28 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
   add_action('woocommerce_thankyou', 'balcaobalcao_send_quote');
   function balcaobalcao_send_quote($order_id)
   {
-    if (!$order_id) {
+    if (!$order_id)
       return;
-    }
-
-    $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
-    $list_order_status_send = $balcaobalcao_shipping->config['order_status_send'];
 
     $order = wc_get_order($order_id);
-    $current_order_status = 'wc-' . $order->get_status();
+    if ($order->has_shipping_method('balcaobalcao_shipping')) {
 
-    // Valida para enviar pro Balcão Balcão apenas uma vez
-    $shipping_info = $order->get_items('shipping');
-    foreach ($shipping_info as $key => $shipping) {
-      if ($shipping->get_meta(__('Tracking Code', 'balcaobalcao_shipping')))
-        return;
-    }
+      $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+      $list_order_status_send = $balcaobalcao_shipping->config['order_status_send'];
 
-    foreach ($list_order_status_send as $key => $order_status_send) {
-      // Se o status atual do pedido for igual ao status configurado em "Status Envio"
-      if ($order_status_send == $current_order_status) {
-        $balcaobalcao_shipping->balcaobalcao->sendOrder($balcaobalcao_shipping->config, $order, $order_status_send);
+      $current_order_status = 'wc-' . $order->get_status();
+
+      // Valida para enviar pro Balcão Balcão apenas uma vez
+      $shipping_info = $order->get_items('shipping');
+      foreach ($shipping_info as $key => $shipping) {
+        if ($shipping->get_meta(__('Tracking Code', 'balcaobalcao_shipping')))
+          return;
+      }
+
+      foreach ($list_order_status_send as $key => $order_status_send) {
+        // Se o status atual do pedido for igual ao status configurado em "Status Envio"
+        if ($order_status_send == $current_order_status)
+          $balcaobalcao_shipping->balcaobalcao->sendOrder($balcaobalcao_shipping->config, $order, $order_status_send);
       }
     }
   }
@@ -446,16 +460,24 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     if (!$order_id)
       return;
 
-    $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
-    $list_order_status_cancel = $balcaobalcao_shipping->config['order_status_cancel'];
+    $order = null;
+    $tracking_code = null;
+    $wcOrder = wc_get_order($order_id);
+    if ($wcOrder->has_shipping_method('balcaobalcao_shipping')) {
+      $shipping_info = $wcOrder->get_items('shipping');
+      foreach ($shipping_info as $key => $shipping) {
+        $tracking_code = $shipping->get_meta(__('Tracking Code', 'balcaobalcao_shipping'));
+        $order = $wcOrder;
+        break;
+      }
 
-    foreach ($list_order_status_cancel as $key => $order_status_send) {
-      if ($order_status_send == 'wc-' . $status_new) {
-        $order = wc_get_order($order_id);
-        $shipping_info = $order->get_items('shipping');
-        foreach ($shipping_info as $key => $shipping) {
-          $tracking_code = $shipping->get_meta(__('Tracking Code', 'balcaobalcao_shipping'));
-          if ($tracking_code) {
+      if ($order && $tracking_code) {
+
+        $balcaobalcao_shipping = new WC_Balcaobalcao_Shipping_Method();
+        $list_order_status_cancel = $balcaobalcao_shipping->config['order_status_cancel'];
+
+        foreach ($list_order_status_cancel as $key => $order_status_send) {
+          if ($order_status_send == 'wc-' . $status_new) {
             $balcaobalcao_shipping->balcaobalcao->updateOrder($balcaobalcao_shipping->config, $tracking_code, 2/*cancelado*/);
           }
         }
